@@ -121,7 +121,7 @@ class Button:
 
 
 def main_menu():
-    login()
+    # login()
     screen.fill((0, 0, 0))
     frog_sound = pygame.mixer.Sound('data/eating-sound-effect-36186.mp3')
     is_moved = False
@@ -270,13 +270,60 @@ class Snake:
         self.direction = Vector2(1, 0)
         self.new_block = False
 
+        self.head_up = pygame.transform.scale(load_image('data/head_up.png'), (40, 40))
+        self.head_down = pygame.transform.scale(load_image('data/head_down.png'), (40, 40))
+        self.head_right = pygame.transform.scale(load_image('data/head_right.png'), (40, 40))
+        self.head_left = pygame.transform.scale(load_image('data/head_left.png'), (40, 40))
+        self.head = self.head_up
+
+        self.tail_up = pygame.transform.scale(load_image('data/tail_up.png'), (40, 40))
+        self.tail_down = pygame.transform.scale(load_image('data/tail_down.png'), (40, 40))
+        self.tail_right = pygame.transform.scale(load_image('data/tail_right.png'), (40, 40))
+        self.tail_left = pygame.transform.scale(load_image('data/tail_left.png'), (40, 40))
+
+        self.tail = self.tail_up
+        self.body_vertical = pygame.transform.scale(load_image('data/body_vertical.png'), (40, 40))
+        self.body_horizontal = pygame.transform.scale(load_image('data/body_horizontal.png'), (40, 40))
+
+        self.body_tr = pygame.transform.scale(load_image('data/body_topright.png'), (40, 40))
+        self.body_tl = pygame.transform.scale(load_image('data/body_topleft.png'), (40, 40))
+        self.body_br = pygame.transform.scale(load_image('data/body_bottomright.png'), (40, 40))
+        self.body_bl = pygame.transform.scale(load_image('data/body_bottomleft.png'), (40, 40))
+
     def draw_snake(self):
-        for block in self.body:
+        self.update_head_graph()
+        self.update_tail_graph()
+        for index, block in enumerate(self.body):
             x_pos = int(block.x * cell_size)
             y_pos = int(block.y * cell_size)
-            snake_block = pygame.Rect(x_pos, y_pos, cell_size, cell_size)
-            pygame.draw.rect(screen, (183, 111, 122), snake_block)
-            # создаём пямоуголькин
+            block_rect = pygame.Rect(x_pos, y_pos, cell_size, cell_size)
+
+            if index == 0:
+                screen.blit(self.head, block_rect)
+            elif index == len(self.body) - 1:
+                screen.blit(self.tail, block_rect)
+            else:
+                previous_block = self.body[index + 1] - block
+                next_block = self.body[index - 1] - block
+                if previous_block.x == next_block.x:
+                    screen.blit(self.body_vertical, block_rect)
+                if previous_block.y == next_block.y:
+                    screen.blit(self.body_horizontal, block_rect)
+                else:
+                    if previous_block.x == -1 and next_block.y == -1 or previous_block.y == -1 and next_block.x == -1:
+                        screen.blit(self.body_tl, block_rect)
+                    elif previous_block.x == -1 and next_block.y == 1 or previous_block.y == 1 and next_block.x == -1:
+                        screen.blit(self.body_bl, block_rect)
+                    elif previous_block.x == 1 and next_block.y == -1 or previous_block.y == -1 and next_block.x == 1:
+                        screen.blit(self.body_tr, block_rect)
+                    elif previous_block.x == 1 and next_block.y == 1 or previous_block.y == 1 and next_block.x == 1:
+                        screen.blit(self.body_br, block_rect)
+
+        # for block in self.body:
+        #     x_pos = int(block.x * cell_size)
+        #     y_pos = int(block.y * cell_size)
+        #     snake_block = pygame.Rect(x_pos, y_pos, cell_size, cell_size)
+        #     pygame.draw.rect(screen, (183, 111, 122), snake_block)
 
     def move_snake(self):
         if self.new_block == True:
@@ -291,6 +338,28 @@ class Snake:
 
     def add_block(self):
         self.new_block = True
+
+    def update_head_graph(self):
+        head_relation = self.body[1] - self.body[0]
+        if head_relation == Vector2(1, 0):
+            self.head = self.head_left
+        elif head_relation == Vector2(-1, 0):
+            self.head = self.head_right
+        elif head_relation == Vector2(0, 1):
+            self.head = self.head_up
+        elif head_relation == Vector2(0, -1):
+            self.head = self.head_down
+
+    def update_tail_graph(self):
+        tail_relation = self.body[-2] - self.body[-1]
+        if tail_relation == Vector2(1, 0):
+            self.tail = self.tail_left
+        elif tail_relation == Vector2(-1, 0):
+            self.tail = self.tail_right
+        elif tail_relation == Vector2(0, 1):
+            self.tail = self.tail_up
+        elif tail_relation == Vector2(0, -1):
+            self.tail = self.tail_down
 
 
 class Fruit:
