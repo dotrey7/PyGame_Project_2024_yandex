@@ -1,12 +1,19 @@
 import pygame
 import sys
 import os
+import sqlite3
 
 SCREEN = WIDTH, HEIGHT = 800, 800
 FPS = 60
 BACKGROUND_COLOR = (13, 242, 97)
 WOOD_COLOR = (149, 99, 13)
+LOGIN_COLOR = (41, 58, 41)
 TEXT_COLOR = (239, 239, 239)
+TIMER_EVENT_TYPE = 30
+pygame.init()
+INDIAN_SOUND = pygame.mixer.Sound('data/click-for-game-menu-131903.mp3')
+SLIDE_IN = pygame.mixer.Sound('data/click-button-app-147358.mp3')
+EXIT_LOGIN_EVENT_TYPE = 31
 
 
 def load_image(name, colorkey=None):
@@ -110,7 +117,8 @@ class Button:
 
 
 def main_menu():
-    INDIAN_SOUND = pygame.mixer.Sound('data/click-for-game-menu-131903.mp3')
+    login()
+    screen.fill((0, 0, 0))
     frog_sound = pygame.mixer.Sound('data/eating-sound-effect-36186.mp3')
     is_moved = False
     running = True
@@ -183,9 +191,102 @@ def main_menu():
     pygame.quit()
 
 
+def draw_play_view(screen, updated1=False, updated2=False):
+    image1 = load_image('data/level1.png', -1)
+    if not updated1:
+        image1 = pygame.transform.scale(image1, (250, 250))
+        draw_text('Level 1', None, TEXT_COLOR, 125, 220, True, 38)
+    else:
+        image1 = pygame.transform.scale(image1, (270, 270))
+        draw_text('Level 1', None, TEXT_COLOR, 125, 220, True, 44)
+    image2 = load_image('data/level2.png', -1)
+    if not updated2:
+        image2 = pygame.transform.scale(image2, (250, 250))
+        draw_text('Level 2', None, TEXT_COLOR, 450, 220, True, 38)
+    else:
+        image2 = pygame.transform.scale(image2, (270, 270))
+        draw_text('Level 2', None, TEXT_COLOR, 450, 220, True, 44)
+    screen.blit(image1, (70, 260))
+    screen.blit(image2, (400, 260))
+
+
 def play_view():
     men = Menu()
     clicked = False
+    exit_button = Button(20, 20, 120, 45, "Exit")
+    running = True
+    moved = False
+    moved_2 = False
+    image_rect = pygame.Rect(70, 260, 250, 250)
+    image_rect2 = pygame.Rect(400, 260, 250, 250)
+    while running:
+        updated_1 = False
+        updated_2 = False
+        pos = pygame.mouse.get_pos()
+        if exit_button.is_clicked(pos):
+            if clicked:
+                running = False
+                INDIAN_SOUND.play()
+        else:
+            moved = True
+
+        if image_rect.collidepoint(pos):
+            updated_1 = True
+            if moved_2:
+                SLIDE_IN.play()
+                moved_2 = False
+            if clicked:
+                level_one_loop()
+        elif image_rect2.collidepoint(pos):
+            updated_2 = True
+            if moved_2:
+                SLIDE_IN.play()
+                moved_2 = False
+            if clicked:
+                level_two_loop()
+        else:
+            moved_2 = True
+
+        clicked = False
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                clicked = True
+
+        men.render(screen)
+        exit_button.render(screen)
+        draw_play_view(screen, updated_1, updated_2)
+        pygame.display.flip()
+
+
+def level_one_loop():
+    clicked = False
+    men = Menu()
+    exit_button = Button(20, 20, 120, 45, "Exit")
+    running = True
+    while running:
+        pos = pygame.mouse.get_pos()
+
+        if exit_button.is_clicked(pos):
+            if clicked:
+                running = False
+
+        clicked = False
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                clicked = True
+
+        men.render(screen)
+        exit_button.render(screen)
+        pygame.display.flip()
+
+
+def level_two_loop():
+    clicked = False
+    men = Menu()
     exit_button = Button(20, 20, 120, 45, "Exit")
     running = True
     while running:
@@ -231,6 +332,19 @@ def options_view():
         pygame.display.flip()
 
 
+def draw_scoreboard():
+    pygame.draw.rect(screen, WOOD_COLOR, pygame.Rect(250, 75, 330, 50))
+    draw_text("Place", None, TEXT_COLOR, 285, 85, True, 33)
+    draw_text("Score", None, TEXT_COLOR, 430, 85, True, 33)
+    con = sqlite3.connect('data/snake_game.db')
+    res = con.cursor().execute("SELECT name, result FROM info ORDER BY -result").fetchmany(10)
+    if res is not None:
+        for i, j in enumerate(res):
+            pygame.draw.rect(screen, WOOD_COLOR, pygame.Rect(250, 75 + (i + 1) * 50, 330, 50))
+            draw_text(j[0], None, TEXT_COLOR, 285, 85 + (i + 1) * 50, True, 33)
+            draw_text(str(j[1]), None, TEXT_COLOR, 460, 85 + (i + 1) * 50, True, 33)
+
+
 def score_view():
     clicked = False
     men = Menu()
@@ -241,6 +355,7 @@ def score_view():
 
         if exit_button.is_clicked(pos):
             if clicked:
+                INDIAN_SOUND.play()
                 running = False
 
         clicked = False
@@ -249,10 +364,159 @@ def score_view():
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 clicked = True
-
         men.render(screen)
+        draw_scoreboard()
         exit_button.render(screen)
         pygame.display.flip()
+
+
+DONE = False
+
+
+def check_info(login, password, screen, reg_clicked, login_clicked):
+    global DONE
+    screen.fill(BACKGROUND_COLOR)
+    if not login or not password:
+        draw_text("Please enter your login and password.", None, LOGIN_COLOR, 200, 375, True,
+                  33)
+    elif not all(i.islower() for i in login if i.isalpha()):
+        draw_text("Please use ONLY small letters and numbers.", None, LOGIN_COLOR, 200, 375, True,
+                  33)
+    else:
+        con = sqlite3.connect("data/snake_game.db")
+        cursor = con.cursor()
+        res = cursor.execute("SELECT * FROM info WHERE name = ? AND password = ?",
+                             (login, password)).fetchall()
+        if login_clicked:
+            if len(res) == 0:
+                draw_text("Информация о Вас не найдена",
+                          None, LOGIN_COLOR, 190, 375, True, 33)
+                draw_text("пожалуйста, зарегистрируйтесь",
+                          None, LOGIN_COLOR, 190, 410, True, 33)
+            else:
+                draw_text("Происходит вход, подождите",
+                          None, LOGIN_COLOR, 190, 410, True, 33)
+                if not DONE:
+                    pygame.time.set_timer(EXIT_LOGIN_EVENT_TYPE, 1000)
+                    DONE = True
+        if reg_clicked:
+            draw_text("Записываем Ваши данные",
+                      None, LOGIN_COLOR, 200, 375, True, 33)
+            if len(res) == 0:
+                cursor.execute("INSERT INTO info (name, password) VALUES (?, ?)", (login, password))
+                con.commit()
+                pygame.time.set_timer(EXIT_LOGIN_EVENT_TYPE, 1000)
+
+
+def login():
+    user_text = ""
+    user_password = ""
+    input_rect = pygame.Rect(295, 245, 140, 32)
+    input_rect_password = pygame.Rect(295, 300, 140, 32)
+    active_color = pygame.Color('black')
+    passive_color = pygame.Color('gray63')
+    color = passive_color
+    color2 = passive_color
+    active = False
+    active2 = False
+    running = True
+    moved = False
+    updated = False
+    checked_condition = False
+    reg_clicked = False
+    login_clicked = False
+    pass_clicked = False
+    font = pygame.font.Font(None, 32)
+    screen.fill(BACKGROUND_COLOR)
+    draw_text('Пароль должен содержать ТОЛЬКО '
+              'строчные', None, LOGIN_COLOR, 20, 20, True, 38)
+    draw_text('буквы и цифры', None, LOGIN_COLOR, 20, 80, True, 38)
+
+    clock = pygame.time.Clock()
+    pygame.display.flip()
+    register = Button(120, 450, 200, 55, "Register")
+    login = Button(450, 450, 200, 55, "Login")
+    while running:
+
+        pos = pygame.mouse.get_pos()
+
+        if register.is_clicked(pos):
+            if moved:
+                INDIAN_SOUND.play()
+                moved = False
+            if clicked:
+                reg_clicked = True
+
+        elif login.is_clicked(pos):
+            if moved:
+                INDIAN_SOUND.play()
+                moved = False
+            if clicked:
+                login_clicked = True
+        else:
+            moved = True
+        clicked = False
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == EXIT_LOGIN_EVENT_TYPE:
+                running = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                clicked = True
+                if input_rect.collidepoint(event.pos):
+                    active = True
+                else:
+                    active = False
+                if input_rect_password.collidepoint(event.pos):
+                    active2 = True
+                else:
+                    active2 = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    active = False
+                    active2 = False
+                if active:
+                    if event.key == pygame.K_RETURN:
+                        active = False
+                    elif event.key == pygame.K_BACKSPACE:
+                        user_text = user_text[:-1]
+                    else:
+                        user_text += event.unicode
+                if active2:
+                    if event.key == pygame.K_RETURN:
+                        active2 = False
+                    elif event.key == pygame.K_BACKSPACE:
+                        user_password = user_password[:-1]
+                    else:
+                        user_password += event.unicode
+
+        if active:
+            color = active_color
+        else:
+            color = passive_color
+        if active2:
+            color2 = active_color
+        else:
+            color2 = passive_color
+
+        check_info(user_text, user_password, screen, reg_clicked, login_clicked)
+        draw_text('Пароль должен содержать ТОЛЬКО строчные', None, LOGIN_COLOR, 20, 20, True, 38)
+        draw_text('буквы и цифры', None, LOGIN_COLOR, 20, 80, True, 38)
+        draw_text('Login ', None, LOGIN_COLOR, 120, 250, True, 33)
+        draw_text('Password', None, LOGIN_COLOR, 120, 310, True, 33)
+        text_surface = font.render(user_text, True, (255, 255, 255))
+        password_surface = font.render(user_password, True, (255, 255, 255))
+        input_rect.width = max(240, text_surface.get_width() + 20)
+        input_rect_password.width = max(240, password_surface.get_width() + 20)
+        pygame.draw.rect(screen, color, input_rect, 2)
+        screen.blit(text_surface, (input_rect.x + 10, input_rect.y + 5))
+        pygame.draw.rect(screen, color2, input_rect_password, 2)
+        screen.blit(password_surface, (input_rect_password.x + 10, input_rect_password.y + 5))
+        register.render(screen)
+        login.render(screen)
+
+        pygame.display.flip()
+        clock.tick(FPS)
 
 
 if __name__ == '__main__':
