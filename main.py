@@ -18,6 +18,7 @@ SLIDE_IN = pygame.mixer.Sound('data/click-button-app-147358.mp3')
 EXIT_LOGIN_EVENT_TYPE = 31
 cell_size = 40
 cell_number = 20
+game_font = pygame.font.Font(None, 25)
 
 
 def load_image(name, colorkey=None):
@@ -121,8 +122,8 @@ class Button:
 
 
 def main_menu():
-    # login()
-    screen.fill((0, 0, 0))
+    log = login()
+    screen.fill(BACKGROUND_COLOR)
     frog_sound = pygame.mixer.Sound('data/eating-sound-effect-36186.mp3')
     is_moved = False
     running = True
@@ -130,10 +131,10 @@ def main_menu():
     frog_sprite = pygame.sprite.Group()
     frog = Animation(65, 415)
     frog_sprite.add(frog)
-    button1 = Button(35, 45, 225, 50, "Play")
-    button2 = Button(35, 125, 225, 50, "Options")
-    button3 = Button(35, 205, 225, 50, "Scoreboard")
-    button4 = Button(112, 610, 100, 110, "")
+    play_button = Button(35, 45, 225, 50, "Play")
+    options_button = Button(35, 125, 225, 50, "Options")
+    scoreboard_button = Button(35, 205, 225, 50, "Scoreboard")
+    check_for_collision = Button(112, 610, 100, 110, "")
     click = False
     updated = False
     clock = pygame.time.Clock()
@@ -141,38 +142,38 @@ def main_menu():
         pos = pygame.mouse.get_pos()
         updated = False
 
-        if button1.is_clicked(pos):
+        if play_button.is_clicked(pos):
             if click:
-                play_view()
+                play_view(log)
             else:
                 updated = True
-                button1.update_view(screen)
+                play_button.update_view(screen)
                 if is_moved:
                     INDIAN_SOUND.play()
                     is_moved = False
-        elif button2.is_clicked(pos):
+        elif options_button.is_clicked(pos):
             if click:
                 options_view()
             else:
                 updated = True
-                button2.update_view(screen)
+                options_button.update_view(screen)
                 if is_moved:
                     INDIAN_SOUND.play()
                     is_moved = False
 
-        elif button3.is_clicked(pos):
+        elif scoreboard_button.is_clicked(pos):
             if click:
                 score_view()
             else:
                 updated = True
-                button3.update_view(screen)
+                scoreboard_button.update_view(screen)
                 if is_moved:
                     INDIAN_SOUND.play()
                     is_moved = False
         else:
             is_moved = True
 
-        if button4.is_clicked(pos):
+        if check_for_collision.is_clicked(pos):
             if click:
                 frog.animate()
                 frog_sound.play()
@@ -185,9 +186,9 @@ def main_menu():
                 click = True
         if not updated:
             men.render(screen)
-        button1.render(screen)
-        button2.render(screen)
-        button3.render(screen)
+        play_button.render(screen)
+        options_button.render(screen)
+        scoreboard_button.render(screen)
         frog_sprite.draw(screen)
         frog_sprite.update()
         pygame.display.flip()
@@ -214,7 +215,7 @@ def draw_play_view(screen, updated1=False, updated2=False):
     screen.blit(image2, (400, 260))
 
 
-def play_view():
+def play_view(log):
     men = Menu()
     clicked = False
     exit_button = Button(20, 20, 120, 45, "Exit")
@@ -240,14 +241,14 @@ def play_view():
                 SLIDE_IN.play()
                 moved_2 = False
             if clicked:
-                level_one_loop()
+                level_one_loop(log)
         elif image_rect2.collidepoint(pos):
             updated_2 = True
             if moved_2:
                 SLIDE_IN.play()
                 moved_2 = False
             if clicked:
-                level_two_loop()
+                level_two_loop(log)
         else:
             moved_2 = True
 
@@ -289,6 +290,9 @@ class Snake:
         self.body_tl = pygame.transform.scale(load_image('data/body_topleft.png'), (40, 40))
         self.body_br = pygame.transform.scale(load_image('data/body_bottomright.png'), (40, 40))
         self.body_bl = pygame.transform.scale(load_image('data/body_bottomleft.png'), (40, 40))
+
+        self.fail_cound = pygame.mixer.Sound('data/__kantouth__cartoon-bing-lo.wav')
+        self.crunch_sound = pygame.mixer.Sound('data/poedanie-ukus-yabloka.wav')
 
     def draw_snake(self):
         self.update_head_graph()
@@ -361,27 +365,91 @@ class Snake:
         elif tail_relation == Vector2(0, -1):
             self.tail = self.tail_down
 
+    def play_crunch_sound(self):
+        self.crunch_sound.play()
+
+    def play_fall_cound(self):
+        self.fail_cound.play()
+
 
 class Fruit:
     def __init__(self):
+        self.apple = pygame.transform.scale(load_image('data/apple.png', -1), (40, 40))
+        self.clubnika = pygame.transform.scale(load_image('data/clubnika.png', -1), (40, 40))
+        self.sliva = pygame.transform.scale(load_image('data/sliva.png', -1), (40, 40))
+        self.arbuz = pygame.transform.scale(load_image('data/arbuz.png', -1), (40, 40))
+        self.vishna = pygame.transform.scale(load_image('data/vishna.png', -1), (40, 40))
+        self.banani = pygame.transform.scale(load_image('data/banani.png', -1), (40, 40))
+        self.orange = pygame.transform.scale(load_image('data/orange.png', -1), (40, 40))
+        self.limon = pygame.transform.scale(load_image('data/limon.png', -1), (40, 40))
+        self.sp = [self.apple, self.clubnika, self.sliva, self.arbuz, self.vishna, self.banani, self.orange, self.limon]
         self.randomise()
 
     def draw_fruit(self):
+        # прямоугольник
+
         fruit_rect = pygame.Rect(int(self.pos.x * cell_size), int(self.pos.y * cell_size), cell_size, cell_size)
-        screen.blit(apple, fruit_rect)
+        screen.blit(self.sp[self.vibor], fruit_rect)
+        # screen.blit(vibor, fruit_rect)
         # pygame.draw.rect(screen, (126, 166, 114), fruit_rect)
 
     def randomise(self):
         self.x = random.randint(0, cell_number - 1)
         self.y = random.randint(0, cell_number - 1)
         self.pos = Vector2(self.x, self.y)
+        self.vibor = random.randint(0, 7)
+
+
+class Wall:
+    def __init__(self):
+        self.one = True
+        self.wall1 = pygame.transform.scale(load_image('data/wall1.png'), (40, 40))
+        self.wall2 = pygame.transform.scale(load_image('data/wall2.png'), (40, 40))
+        self.wall3 = pygame.transform.scale(load_image('data/wall3.png'), (40, 40))
+        self.lis = [self.wall1, self.wall3, self.wall2]
+        self.walls = list()
+        self.rand()
+
+    def draw_wall(self):
+        # прямоугольник
+        self.map_generate()
+        self.generate_place()
+        for i in self.walls:
+            wall_rect = pygame.Rect(i[0] * cell_size, i[1] * cell_size, cell_size, cell_size)
+            screen.blit(self.lis[self.vibor], wall_rect)
+
+    def map_generate(self):
+        if self.one:
+            matrix = [[0] * 20 for _ in range(20)]
+            for i in range(20):
+                for j in range(20):
+                    matrix[i][j] = random.randint(0, 18)
+            self.m = matrix
+            self.one = False
+
+    def generate_place(self):
+        for j in range(len(self.m)):
+            for i in range(0, len(self.m[j])):
+                if self.m[j][i] == 0:
+                    self.walls.append((i, j))
+                    # pygame.draw.rect(screen, 'white', (cell_size * i, cell_size * j, 40, 40))
+
+    def rand(self):
+        self.vibor = random.randint(0, 2)
 
 
 class MAIN:
-    def __init__(self):
+    def __init__(self, login, level):
+        self.icon = pygame.transform.scale(load_image('data/apple.png'), (25, 25))
         self.snake = Snake()
         self.fruit = Fruit()
+        self.fruit1 = Fruit()
+        self.fruit2 = Fruit()
         self.running = True
+        self.level = level
+        self.log = login
+        if level != -1:
+            self.wall = Wall()
 
     def update(self):
         self.snake.move_snake()
@@ -390,23 +458,81 @@ class MAIN:
 
     def draw_elements(self):
         self.draw_grass()
+
+        self.fruit1.draw_fruit()
+        if self.level != -1:
+            self.wall.draw_wall()
+        self.fruit2.draw_fruit()
         self.fruit.draw_fruit()
         self.snake.draw_snake()
+        self.draw_score()
 
     def check_collision(self):
+        self.f = [[0] * 20 for _ in range(20)]
+        for i in range(20):
+            for j in range(20):
+                self.f[i][j] = (i, j)
+
+        for el in range(len(self.f)):
+            for m in range(len(self.f[el])):
+                if self.f[el][m] != 0:
+                    if Vector2(self.f[el][m][0], self.f[el][m][1]) in self.snake.body:
+                        self.f[el][m] = 0
+                    elif self.level != -1 and self.f[el][m] in self.wall.walls:
+                        self.f[el][m] = 0
+
+        # print('snack')
+        # переместить фрукт в другую ячейку и создать новый блок в змее
+        # + защита от отрисовки на змейке или другом фрукте
         if self.fruit.pos == self.snake.body[0]:
-            # print('snack')
-            # переместить фрукт в другую ячейку и создать новый блок в змее
             self.fruit.randomise()
+            n = False
+            while not n:
+                for el in self.snake.body:
+                    if self.fruit.pos == el or self.fruit.pos == self.fruit1.pos or self.fruit == self.fruit2.pos:
+                        self.fruit.randomise()
+                n = True
             self.snake.add_block()
+            self.snake.play_crunch_sound()
+        elif self.fruit1.pos == self.snake.body[0]:
+            self.fruit1.randomise()
+            n = False
+            while not n:
+                for el in self.snake.body:
+                    if self.fruit1.pos == el or self.fruit1.pos == self.fruit.pos or self.fruit1 == self.fruit2.pos:
+                        self.fruit1.randomise()
+                n = True
+            self.snake.add_block()
+            self.snake.play_crunch_sound()
+        elif self.fruit2.pos == self.snake.body[0]:
+            self.fruit2.randomise()
+            n = False
+            while not n:
+                for el in self.snake.body:
+                    if self.fruit2.pos == el or self.fruit2.pos == self.fruit1.pos or self.fruit2 == self.fruit.pos:
+                        self.fruit2.randomise()
+                n = True
+            self.snake.add_block()
+            self.snake.play_crunch_sound()
 
     def check_fail(self):
         if not 0 <= self.snake.body[0].x < cell_number or not 0 <= self.snake.body[0].y < cell_number:
+            self.snake.play_fall_cound()
+            pygame.time.wait(1000)
             self.game_over()
 
         for block in self.snake.body[1:]:
             if block == self.snake.body[0]:
+                self.snake.play_fall_cound()
+                pygame.time.wait(1000)
                 self.game_over()
+        if self.level != -1:
+            for el in self.wall.walls:
+                if self.snake.body[0].x == el[0] and self.snake.body[0].y == el[1]:
+                    self.snake.play_fall_cound()
+                    pygame.time.wait(1000)
+                    self.game_over()
+                    break
 
     def game_over(self):
         self.running = False
@@ -425,6 +551,28 @@ class MAIN:
                         grass_rect = pygame.Rect(col * cell_size, row * cell_size, cell_size, cell_size)
                         pygame.draw.rect(screen, grass_color, grass_rect)
 
+    def draw_score(self):
+        score_text = str(len(self.snake.body) - 3)
+        try:
+            con = sqlite3.connect('data/snake_game.db')
+            last_score = con.cursor().execute("SELECT result FROM info WHERE name=?", (self.log,)).fetchone()
+            if int(last_score[0]) < int(score_text):
+                con.cursor().execute("UPDATE info SET result=? WHERE name=?", (score_text, self.log))
+                con.commit()
+        except Exception as e:
+            pass
+        score_surface = game_font.render(score_text, True, '#090974')
+        score_x = int(cell_size * 1.25)
+        score_y = int(cell_size * 19)
+        score_rect = score_surface.get_rect(center=(score_x, score_y))
+        icon_rect = self.icon.get_rect(midright=(score_rect.left, score_rect.centery))
+        bg_rect = pygame.Rect(icon_rect.left, icon_rect.top, icon_rect.width + score_rect.width + 10, icon_rect.height)
+
+        pygame.draw.rect(screen, (167, 209, 61), bg_rect)
+        screen.blit(score_surface, score_rect)
+        screen.blit(self.icon, icon_rect)
+        pygame.draw.rect(screen, '#090974', bg_rect, 2)
+
 
 SCREEN_UPDATE = pygame.USEREVENT
 
@@ -432,17 +580,15 @@ image = ''
 apple = ''
 
 
-def level_one_loop():
+def level_one_loop(log):
     global image, apple
     clicked = False
     exit_button = Button(20, 20, 120, 45, "Exit")
-    running = True
     clock = pygame.time.Clock()
     image = load_image('data/apple.png')
     apple = pygame.transform.scale(image, (40, 40))
-    main_game = MAIN()
-    game_font = pygame.font.Font(None, 25)
-    pygame.time.set_timer(SCREEN_UPDATE, 150)
+    main_game = MAIN(log, -1)
+    pygame.time.set_timer(SCREEN_UPDATE, 100)
     while main_game.running:
         pos = pygame.mouse.get_pos()
 
@@ -479,28 +625,53 @@ def level_one_loop():
         clock.tick(60)
 
 
-def level_two_loop():
+pygame.time.set_timer(SCREEN_UPDATE, 100)
+
+
+def level_two_loop(log):
+    global image, apple
     clicked = False
-    men = Menu()
     exit_button = Button(20, 20, 120, 45, "Exit")
-    running = True
-    while running:
+    clock = pygame.time.Clock()
+    image = load_image('data/apple.png')
+    apple = pygame.transform.scale(image, (40, 40))
+    main_game = MAIN(log, 2)
+    pygame.time.set_timer(SCREEN_UPDATE, 100)
+    while main_game.running:
         pos = pygame.mouse.get_pos()
 
         if exit_button.is_clicked(pos):
             if clicked:
-                running = False
+                main_game.running = False
 
         clicked = False
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                main_game.running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 clicked = True
+            if event.type == SCREEN_UPDATE:
+                main_game.update()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    if main_game.snake.direction.y != 1:
+                        main_game.snake.direction = Vector2(0, -1)
+                if event.key == pygame.K_RIGHT:
+                    if main_game.snake.direction.x != -1:
+                        main_game.snake.direction = Vector2(1, 0)
+                if event.key == pygame.K_DOWN:
+                    if main_game.snake.direction.y != -1:
+                        main_game.snake.direction = Vector2(0, 1)
+                if event.key == pygame.K_LEFT:
+                    if main_game.snake.direction.x != 1:
+                        main_game.snake.direction = Vector2(-1, 0)
 
-        men.render(screen)
+        screen.fill((175, 215, 70))
+        main_game.draw_elements()
         exit_button.render(screen)
         pygame.display.flip()
+        clock.tick(60)
+    print('ran')
 
 
 def options_view():
@@ -565,11 +736,11 @@ def score_view():
         pygame.display.flip()
 
 
-DONE = False
+WAS_CLICKED = False
 
 
 def check_info(login, password, screen, reg_clicked, login_clicked):
-    global DONE
+    global WAS_CLICKED
     screen.fill(BACKGROUND_COLOR)
     if not login or not password:
         draw_text("Please enter your login and password.", None, LOGIN_COLOR, 200, 375, True,
@@ -591,12 +762,19 @@ def check_info(login, password, screen, reg_clicked, login_clicked):
             else:
                 draw_text("Происходит вход, подождите",
                           None, LOGIN_COLOR, 190, 410, True, 33)
-                if not DONE:
+                if not WAS_CLICKED:
                     pygame.time.set_timer(EXIT_LOGIN_EVENT_TYPE, 1000)
-                    DONE = True
+                    WAS_CLICKED = True
         if reg_clicked:
-            draw_text("Записываем Ваши данные",
-                      None, LOGIN_COLOR, 200, 375, True, 33)
+            if len(res) == 0:
+                draw_text("Записываем Ваши данные",
+                          None, LOGIN_COLOR, 200, 375, True, 33)
+            else:
+                draw_text("Осуществляем вход, подождите",
+                          None, LOGIN_COLOR, 200, 375, True, 33)
+                if not WAS_CLICKED:
+                    pygame.time.set_timer(EXIT_LOGIN_EVENT_TYPE, 1000)
+                    WAS_CLICKED = True
             if len(res) == 0:
                 cursor.execute("INSERT INTO info (name, password) VALUES (?, ?)", (login, password))
                 con.commit()
@@ -604,7 +782,7 @@ def check_info(login, password, screen, reg_clicked, login_clicked):
 
 
 def login():
-    user_text = ""
+    user_login = ""
     user_password = ""
     input_rect = pygame.Rect(295, 245, 140, 32)
     input_rect_password = pygame.Rect(295, 300, 140, 32)
@@ -674,9 +852,9 @@ def login():
                     if event.key == pygame.K_RETURN:
                         active = False
                     elif event.key == pygame.K_BACKSPACE:
-                        user_text = user_text[:-1]
+                        user_login = user_login[:-1]
                     else:
-                        user_text += event.unicode
+                        user_login += event.unicode
                 if active2:
                     if event.key == pygame.K_RETURN:
                         active2 = False
@@ -694,12 +872,12 @@ def login():
         else:
             color2 = passive_color
 
-        check_info(user_text, user_password, screen, reg_clicked, login_clicked)
+        check_info(user_login, user_password, screen, reg_clicked, login_clicked)
         draw_text('Пароль должен содержать ТОЛЬКО строчные', None, LOGIN_COLOR, 20, 20, True, 38)
         draw_text('буквы и цифры', None, LOGIN_COLOR, 20, 80, True, 38)
         draw_text('Login ', None, LOGIN_COLOR, 120, 250, True, 33)
         draw_text('Password', None, LOGIN_COLOR, 120, 310, True, 33)
-        text_surface = font.render(user_text, True, (255, 255, 255))
+        text_surface = font.render(user_login, True, (255, 255, 255))
         password_surface = font.render(user_password, True, (255, 255, 255))
         input_rect.width = max(240, text_surface.get_width() + 20)
         input_rect_password.width = max(240, password_surface.get_width() + 20)
@@ -712,6 +890,7 @@ def login():
 
         pygame.display.flip()
         clock.tick(FPS)
+    return user_login
 
 
 if __name__ == '__main__':
