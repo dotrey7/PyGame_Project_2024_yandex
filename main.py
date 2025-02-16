@@ -474,15 +474,12 @@ class Wall:
     # Класс для отрисовки стен
     def __init__(self):
         self.one = True
-        try:
-            self.wall1 = pygame.transform.scale(load_image('data/wall1.png'), (40, 40))
-            self.wall2 = pygame.transform.scale(load_image('data/wall2.png'), (40, 40))
-            self.wall3 = pygame.transform.scale(load_image('data/wall3.png'), (40, 40))
-            self.lis = [self.wall1, self.wall3, self.wall2]
-            self.walls = list()
-            self.rand()
-        except Exception as e:
-            print('Невозможно открыть изображение стены')
+        self.wall1 = pygame.transform.scale(load_image('data/wall1.png'), (40, 40))
+        self.wall2 = pygame.transform.scale(load_image('data/wall2.png'), (40, 40))
+        self.wall3 = pygame.transform.scale(load_image('data/wall3.png'), (40, 40))
+        self.lis = [self.wall1, self.wall3, self.wall2]
+        self.walls = list()
+        self.rand()
 
     def draw_wall(self):
         # Рисует стенки из координат, заданных в списке
